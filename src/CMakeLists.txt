@@ -5,35 +5,36 @@ find_package(Vulkan REQUIRED)
 find_package(glfw3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 
-# Add custom command to compile shaders
+# Create shaders directory in build folder
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/shaders)
+
+# Compile vertex shader directly to build directory
 add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/shaders/vert.spv ${CMAKE_CURRENT_SOURCE_DIR}/shaders/frag.spv
-        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/shaders/compile.sh
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/shaders
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shader.vert ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shader.frag
-        COMMENT "Compiling shaders..."
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/shaders/vert.spv
+        COMMAND ${Vulkan_GLSLC_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shader.vert -o ${CMAKE_CURRENT_BINARY_DIR}/shaders/vert.spv
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shader.vert
+        COMMENT "Compiling vertex shader..."
+        VERBATIM
+)
+
+# Compile fragment shader directly to build directory
+add_custom_command(
+        OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/shaders/frag.spv
+        COMMAND ${Vulkan_GLSLC_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shader.frag -o ${CMAKE_CURRENT_BINARY_DIR}/shaders/frag.spv
+        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/shader.frag
+        COMMENT "Compiling fragment shader..."
         VERBATIM
 )
 
 # Add custom target to ensure shaders are compiled
 add_custom_target(CompileShaders ALL
-        DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/shaders/vert.spv ${CMAKE_CURRENT_SOURCE_DIR}/shaders/frag.spv
+        DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/shaders/vert.spv ${CMAKE_CURRENT_BINARY_DIR}/shaders/frag.spv
 )
 
 add_executable(VulkanTutorial main.cpp)
 
 # Make sure shaders are compiled before building the executable
 add_dependencies(VulkanTutorial CompileShaders)
-
-# Copy shader files to build directory
-add_custom_command(TARGET VulkanTutorial POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E make_directory $<TARGET_FILE_DIR:VulkanTutorial>/shaders
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                ${CMAKE_CURRENT_SOURCE_DIR}/shaders/vert.spv
-                ${CMAKE_CURRENT_SOURCE_DIR}/shaders/frag.spv
-                $<TARGET_FILE_DIR:VulkanTutorial>/shaders/
-        COMMENT "Copying shader files to build directory..."
-)
 
 target_link_libraries(VulkanTutorial PRIVATE glfw)
 target_link_libraries(VulkanTutorial PRIVATE glm::glm)
