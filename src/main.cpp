@@ -134,7 +134,7 @@ class HelloTriangleApplication {
         "VK_LAYER_KHRONOS_validation"
     };
 
-    const std::vector<const char *> deviceExtensions = {
+    std::set<const char *> deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
 
@@ -439,12 +439,13 @@ private:
             }
         }
 
+        // If available, add VK_KHR_portability_subset to deviceExtensions
+        if (portabilitySubsetAvailable) {
+            deviceExtensions.insert("VK_KHR_portability_subset");
+        }
+
         std::set<std::string> requiredExtensions(deviceExtensions.begin(), deviceExtensions.end());
 
-        // If available, add VK_KHR_portability_subset to requiredExtensions
-        if (portabilitySubsetAvailable) {
-            requiredExtensions.insert("VK_KHR_portability_subset");
-        }
 
         for (const auto &extension: availableExtensions) {
             requiredExtensions.erase(extension.extensionName);
@@ -535,7 +536,8 @@ private:
         createInfo.pEnabledFeatures = &deviceFeatures;
 
         createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
-        createInfo.ppEnabledExtensionNames = deviceExtensions.data();
+        std::vector enabledExtensions(deviceExtensions.begin(), deviceExtensions.end());
+        createInfo.ppEnabledExtensionNames = enabledExtensions.data();
 
         if (enableValidationLayers) {
             createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
